@@ -10,7 +10,6 @@ import { bgData } from "./data"
 import Video from "../../assets/video_1.mp4"
 
 const Dashboard = () => {
-  console.log("bgData", bgData);
   return (
     <Box>
       <video autoPlay muted loop id="video-bg">

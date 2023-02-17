@@ -186,6 +186,11 @@ tbody td:hover:before {
     right: 5px;
   }
 }
+.course-list {
+  li {
+    cursor: pointer;
+  }
+}
 .course-list-view {
   color: #ffffff;
   .img-wrap {

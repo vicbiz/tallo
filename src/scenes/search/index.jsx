@@ -64,7 +64,7 @@ const Search = () => {
 
   const courseSelected = (courseId) => {
     console.log("courseSelected",courseId);
-    const url = `/courseList?courseSearchId=${courseId}`;
+    const url = `/course?courseSearchId=${courseId}`;
     window.open(url, '_self')?.focus();
   }
 
@@ -112,7 +112,7 @@ const Search = () => {
                   <li className="list-title course">Popular</li>
                   {
                     POPULAR.map((course) => (
-                      <li key={course.id} className="course" onClick={() => courseSelected(course.id)}>
+                      <li key={course.id} className="course" onClick={() => { window.open('/courseList', '_self')?.focus() }}>
                         <span className="course-name"><FiberManualRecordIcon sx={{color: "#00FF00", width: "10px"}}/> {course.courseName}</span>
                         <span className="course-from">{course.courseCount} courses</span>
                       </li>
@@ -120,7 +120,7 @@ const Search = () => {
                   }
                 </div>
                 <div className="list-bottom">
-                  <li className="list-title course" onClick={() => courseSelected("all")}>All Courses</li>
+                  <li className="list-title course" onClick={() => { window.open('/courseList', '_self')?.focus() }}>All Courses</li>
                   {foundCourses && foundCourses.length > 0 ? (
                     foundCourses.map((course) => (
                       <li key={course.id} className="course" onClick={() => courseSelected(course.id)}>
