@@ -1,0 +1,5 @@
+public/
+/.idea/
+
+# NPM Packages
+node_modules/
