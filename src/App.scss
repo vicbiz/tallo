@@ -201,6 +201,8 @@ tbody td:hover:before {
     cursor: pointer;
     img {
       object-fit: cover;
+      width: 100%;
+      height: 100%;
     }
   }
   .title-wrap {
@@ -559,4 +561,11 @@ tbody td:hover:before {
   }
 }
 
+.content-main-image {
+  width: 100%;
+  &.small-img {
+    float: right;
+    margin: 16px;
+  }
+}
 

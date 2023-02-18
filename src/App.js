@@ -22,7 +22,7 @@ function App() {
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/courseList" element={<CourseList />} />
-              <Route path="/course" element={<Course />} />
+              <Route path="/course/:courseId" element={<Course />} />
             </Routes>
           </main>
           <Search/>

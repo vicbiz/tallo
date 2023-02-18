@@ -4,7 +4,6 @@ import Divider from '@mui/material/Divider';
 import Select, {SelectChangeEvent} from '@mui/material/Select';
 import Checkbox from '@mui/material/Checkbox';
 import {tokens} from "../../theme";
-import {mockDataCourse} from "../../data/mockData";
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
@@ -23,15 +22,35 @@ import 'react-tabulator/lib/styles.css';
 import 'react-tabulator/lib/css/tabulator.min.css';
 import {ReactTabulator} from 'react-tabulator'
 import {createRoot} from "react-dom/client";
+// import {mockDataCourse} from "../../data/mockData";
+import CLASS_CENTRAL_DATA from "../../data/classcentral-data.json";
+
 
 
 const Course = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+
   let tableRef = useRef(null);
 
+  const subjectListSet = new Set();
+  function setSujectData(data) {
+    data.forEach(courseData => {
+      let subjectString = "";
+      courseData.subjects.forEach(s=> {
+        subjectString += `${s.name} | `;
+        subjectListSet.add(s.name);
+      })
+      courseData.subjectData = subjectString;
+    })
+    return data;
+  }
+  const mockDataCourse = setSujectData(CLASS_CENTRAL_DATA.data.courses);
+  const subjectList = [...subjectListSet];
+
+
   useEffect(() => {
-    console.log("tableRef.current", tableRef.current);
+    // console.log("tableRef.current", tableRef.current);
   }, [tableRef]);
 
   function renderDate(date) {
@@ -68,29 +87,28 @@ const Course = () => {
             className="course-list-view"
           >
             <div className="img-wrap">
-              <img src={rowData.image} alt="" onClick={() => {
-                window.open("/course", '_self')?.focus()
+              <img src={rowData.imageUrl} alt="" onClick={() => {
+                window.open(`/course/${rowData.id}`, '_self')?.focus()
               }}/>
             </div>
             <Box display='flex' flexDirection='column' gap="10px" justifyContent="center">
               <div className="title-wrap">
-                <div className="category"> {rowData.category === '' ? ' ' : rowData.category}</div>
+                <div className="category"> {rowData.followed > 5 ? ' Popular Course' : ""}</div>
                 <div className="title" onClick={() => {
-                  window.open("/course", '_self')?.focus()
-                }}>{rowData.title}</div>
+                  window.open(`/course/${rowData.id}`, '_self')?.focus()
+                }}>{rowData.name}</div>
               </div>
               <div className="rating-wrap">
-                <span><Rating name="simple-controlled" value={rowData.score} readOnly={true} />
-                </span>
-                <span className='score'>{rowData.score}</span>
-                <span className='reviews'>{rowData.review} reviews</span>
+                <span><Rating name="simple-controlled" value={rowData.rating} readOnly={true} /></span>
+                <span className='score'>{rowData.rating}</span>
+                <span className='reviews'>{rowData.reviewsCount} reviews</span>
               </div>
               <div className="info-wrap">
                 <div><img className="icon-level" src={LevelIcon} alt=""/><span>{rowData.level}</span></div>
-                <div><img className="icon-hours" src={HoursIcon} alt=""/><span>{rowData.hours} hr</span></div>
-                <div><img className="icon-price" src={PriceIcon} alt=""/><span>{rowData.price === 0 ? 'Free' : `${rowData.price}`}</span></div>
+                <div><img className="icon-hours" src={HoursIcon} alt=""/><span>{rowData.durationMax < 1 ? 0 : rowData.durationMax}</span></div>
+                <div><img className="icon-price" src={PriceIcon} alt=""/><span>{rowData.price < 1 ? 'Free' : `${rowData.price}`}</span></div>
               </div>
-              <div className="listed-date">{renderDate(rowData?.date)}</div>
+              <div className="listed-date">{renderDate(rowData?.lastModified)}</div>
             </Box>
           </Box>
         </Box>
@@ -101,14 +119,9 @@ const Course = () => {
   };
 
   const columns = [
-    {title: "id", field: "id", visible: false},
-    {title: "category", field: "category", hozAlign: "left", visible: false},
+    {title: "listView", field: "", hozAlign: "left", formatter: listViewFormatter},
     {title: "price", field: "price", hozAlign: "left", visible: false},
-    {title: "date", field: "date", hozAlign: "left", visible: false},
-    {title: "certificate", field: "certificate", hozAlign: "left", visible: false},
-    {title: "freeCertificate", field: "freeCertificate", hozAlign: "left", visible: false},
-    {title: "universityCourse", field: "universityCourse", hozAlign: "left", visible: false},
-    {title: "listView", field: "category", hozAlign: "left", formatter: listViewFormatter},
+    {title: "lastModified", field: "lastModified", hozAlign: "left", visible: false},
   ];
 
   const selectSX = {
@@ -163,8 +176,9 @@ const Course = () => {
       const allCheckFilters = document.querySelectorAll(".filter-wrap input[type='checkbox']:checked");
       allCheckFilters.forEach(ft => {
         const fieldName = ft.getAttribute("id");
+
         if (fieldName === 'price') {
-          filterConditions.push([{field: fieldName, type: "=", value: 0}]);
+          filterConditions.push([{field: fieldName, type: "<", value: 1}]);
         } else {
           filterConditions.push([{field: fieldName, type: "=", value: true}]);
         }
@@ -176,13 +190,28 @@ const Course = () => {
       const language = document.querySelector("#dropdown-language input").value;
 
       if (level !== "") filterConditions.push([{field: "level", type: "=", value: level}]);
-      if (duration !== "") filterConditions.push([{field: "hours", type: "<=", value: duration}]);
-      if (subject !== "") filterConditions.push([{field: "title", type: "starts", value: subject}]);
-      if (language !== "") filterConditions.push([{field: "language", type: "=", value: language}]);
+      if (subject !== "") filterConditions.push([{field: "subjectData", type: "like", value: subject}]);
+      if (language !== "") filterConditions.push([{field: "language.name", type: "=", value: language}]);
 
-      if (filterConditions.length > 0) {
-        tableRef.current.current.setFilter(filterConditions);
+      if (duration !== "") {
+        const fileHours = "durationMax";
+        switch (duration) {
+          case '<5':
+            filterConditions.push([{field: fileHours, type: "<", value: 5}]);
+            break;
+          case '5-10':
+            filterConditions.push([{field: fileHours, type: "in", value: [5,6,7,8,9,10]}]);
+            break;
+          case '>10':
+            filterConditions.push([{field: fileHours, type: ">", value: 10}]);
+            break;
+          default:
+            console.log(`Wrong Selection value...`);
+        }
       }
+
+      tableRef.current.current.setFilter(filterConditions);
+
     }, 100);
   };
 
@@ -211,21 +240,29 @@ const Course = () => {
       </Box>
       <Box display="flex" maxWidth="1216px" gap="64px" mt="40px" ml="auto" mr="auto" justifyContent="space-between">
         <Box className="filter-wrap">
-          <div className="checkbox-wrap"><Checkbox id="certificate" className="check-filter"
-                                                   sx={{color: "#ffffff", '&.Mui-checked': {color: "#ffffff"}}}
-                                                   onChange={(e) => handleMultiFilters(e)}/><span>With certificate</span>
+          <div className="checkbox-wrap">
+            <Checkbox id="certificate" className="check-filter"
+             sx={{color: "#ffffff", '&.Mui-checked': {color: "#ffffff"}}}
+             onChange={(e) => handleMultiFilters(e)}/>
+            <span>With certificate</span>
           </div>
-          <div className="checkbox-wrap"><Checkbox id="price" className="check-filter"
-                                                   sx={{color: "#ffffff", '&.Mui-checked': {color: "#ffffff"}}}
-                                                   onChange={(e) => handleMultiFilters(e)}/><span>Free course</span>
+          <div className="checkbox-wrap">
+            <Checkbox id="price" className="check-filter"
+             sx={{color: "#ffffff", '&.Mui-checked': {color: "#ffffff"}}}
+             onChange={(e) => handleMultiFilters(e)}/>
+            <span>Free course</span>
           </div>
-          <div className="checkbox-wrap"><Checkbox id="freeCertificate" className="check-filter"
-                                                   sx={{color: "#ffffff", '&.Mui-checked': {color: "#ffffff"}}}
-                                                   onChange={(e) => handleMultiFilters(e)}/><span>With free certificate</span>
+          <div className="checkbox-wrap">
+            <Checkbox id="freeCertificate" className="check-filter"
+               sx={{color: "#ffffff", '&.Mui-checked': {color: "#ffffff"}}}
+               onChange={(e) => handleMultiFilters(e)}/>
+            <span>With free certificate</span>
           </div>
-          <div className="checkbox-wrap"><Checkbox id="universityCourse" className="check-filter"
-                                                   sx={{color: "#ffffff", '&.Mui-checked': {color: "#ffffff"}}}
-                                                   onChange={(e) => handleMultiFilters(e)}/><span>University course</span>
+          <div className="checkbox-wrap">
+            <Checkbox id="isUniversity" className="check-filter"
+             sx={{color: "#ffffff", '&.Mui-checked': {color: "#ffffff"}}}
+             onChange={(e) => handleMultiFilters(e)}/>
+            <span>University course</span>
           </div>
 
           <FormControl id="dropdown-level" className="dropdown-filter" sx={{m: 0, minWidth: 120}} size="small">
@@ -235,8 +272,9 @@ const Course = () => {
               handleMultiFilters(e)
             }} sx={selectSX}>
               <MenuItem value="">None</MenuItem>
-              <MenuItem value='Beginner'>Beginner</MenuItem>
-              <MenuItem value='Expert'>Expert</MenuItem>
+              <MenuItem value='beginner'>Beginner</MenuItem>
+              <MenuItem value='intermediate'>Intermediate</MenuItem>
+              <MenuItem value='advanced'>Advanced</MenuItem>
             </Select>
           </FormControl>
 
@@ -247,8 +285,9 @@ const Course = () => {
               handleMultiFilters(e)
             }} sx={selectSX}>
               <MenuItem value="">None</MenuItem>
-              <MenuItem value="5">5hr</MenuItem>
-              <MenuItem value='10'>10hr</MenuItem>
+              <MenuItem value="<5">&lt; 5</MenuItem>
+              <MenuItem value="5-10">5-10</MenuItem>
+              <MenuItem value='>10'>10 + </MenuItem>
             </Select>
           </FormControl>
 
@@ -259,7 +298,9 @@ const Course = () => {
               handleMultiFilters(e)
             }} sx={selectSX}>
               <MenuItem value="">None</MenuItem>
-              <MenuItem value='Evaluation of AI Application'>Evaluation of AI Application</MenuItem>
+              {subjectList.map((sbj, idx) => (
+                <MenuItem key={idx} value={sbj}>{sbj}</MenuItem>
+              ))};
               <MenuItem value='Introduction to Healthcare'>Introduction to Healthcare</MenuItem>
             </Select>
           </FormControl>
@@ -281,7 +322,7 @@ const Course = () => {
           <Box display="flex" justifyContent="space-between" mb="16px">
             <div className="connectedBtn">
               <span className="active" onClick={(e) => {
-                setFieldSort({field: 'date', sort: 'desc'});
+                setFieldSort({field: 'lastModified', sort: 'desc'});
                 updateActiveButton(e);
               }}>Sort by date</span>
               <span onClick={(e) => {
@@ -307,7 +348,7 @@ const Course = () => {
               }}
               data={mockDataCourse}
               columns={columns}
-              initialSort={[{column: "date", dir: "desc"},]}
+              initialSort={[{column: "lastModified", dir: "desc"},]}
               layout={"fitData"}
               options={{
                 layout: "fitColumns",

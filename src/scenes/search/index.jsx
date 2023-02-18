@@ -5,28 +5,34 @@ import InputBase from "@mui/material/InputBase";
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import SearchIcon from "@mui/icons-material/Search";
 import './style.scss';
-import {POPULAR, COURSES} from "./searchData";
+import {POPULAR} from "./searchData";
+import CLASS_CENTRAL_DATA from "../../data/classcentral-data.json";
 
 const Search = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
+  const COURSES = CLASS_CENTRAL_DATA.data.courses;
+
   const [courseName, setCourseName] = useState('');
   const [showList, setShowList] = useState(true);
   const [foundCourses, setFoundCourses] = useState(COURSES);
 
+
   const filter = (e) => {
     const keyword = e.target.value;
+    setCourseName(keyword);
+
     if (keyword !== '') {
       const results = COURSES.filter((course) => {
-        return course.courseName.toLowerCase().includes(keyword.toLowerCase());
+        return course.name.toLowerCase().includes(keyword.toLowerCase());
       });
       setFoundCourses(results);
     } else {
       setFoundCourses(COURSES);
     }
-    setCourseName(keyword);
   };
+
 
   const showSearch = (e) => {
     const mainContent = document.querySelector("#main-content");
@@ -43,17 +49,12 @@ const Search = () => {
     const searchFullScreen = document.querySelector("#search-full-screen");
     mainContent.classList.remove("hidden");
     searchFullScreen.classList.add("hidden");
-    // console.log("hide Search", mainContent);
   }
 
   document.addEventListener("click", e => {
-    // console.log("clicked", e.target);
-    // console.log('e.target.matches(".search-trigger input")', e.target.matches(".search-trigger *"));
     if(e.target.matches("#search-wrap *") || e.target.matches(".search-trigger *")) {
-      // console.log("inside search box");
       showSearch();
     } else {
-      // console.log("outside search box");
       hideSearchList();
     }
   });
@@ -63,8 +64,7 @@ const Search = () => {
 
 
   const courseSelected = (courseId) => {
-    console.log("courseSelected",courseId);
-    const url = `/course?courseSearchId=${courseId}`;
+    const url = `/course/${courseId}`;
     window.open(url, '_self')?.focus();
   }
 
@@ -121,11 +121,11 @@ const Search = () => {
                 </div>
                 <div className="list-bottom">
                   <li className="list-title course" onClick={() => { window.open('/courseList', '_self')?.focus() }}>All Courses</li>
-                  {foundCourses && foundCourses.length > 0 ? (
+                  { foundCourses && foundCourses.length > 0 ? (
                     foundCourses.map((course) => (
                       <li key={course.id} className="course" onClick={() => courseSelected(course.id)}>
-                        <span className="course-name">{course.courseName}</span>
-                        <span className="course-from">{course.courseFrom}</span>
+                        <span className="course-name">{course.name}</span>
+                        <span className="course-from">{course.provider.name}</span>
                       </li>
                     ))
                   ) : (
